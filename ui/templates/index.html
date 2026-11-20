@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>SBOM Monitoring Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles_safe.css') }}">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-mark">S</div>
+          <div class="brand-copy">
+            <h1>SBOM Monitor</h1>
+            <p>Security dashboard</p>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-panel="dashboard-panel">Dashboard</button>
+          <button class="nav-item" data-panel="population-panel">Initial Population</button>
+          <button class="nav-item" data-panel="scan-panel">Run Scan</button>
+          <button class="nav-item" data-panel="results-panel">Results</button>
+          <button class="nav-item" data-panel="history-panel">History</button>
+          <button class="nav-item" data-panel="scheduler-panel">Settings</button>
+          <button class="nav-item" data-panel="timeline-panel">Vulnerability Timeline</button>
+          <button class="nav-item" data-panel="alerts-panel">Alerts and Notifications</button>
+          <button class="nav-item" data-panel="analytics-panel">Analytics</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-card">
+            <span class="sidebar-footer-label">Scheduler</span>
+            <strong id="sidebar-scheduler-status">Loading...</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div>
+            <p class="topbar-kicker">Live security overview</p>
+            <h2>SBOM Monitoring Dashboard</h2>
+            <p class="topbar-subtitle">
+              Track repositories, run scans, review vulnerability data, manage monitoring, and open analytics from one place.
+            </p>
+          </div>
+
+          <div class="topbar-actions">
+            <div class="topbar-status">
+              <span class="live-dot"></span>
+              <span id="last-updated-text">Live data</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- DASHBOARD PANEL -->
+        <section id="dashboard-panel" class="panel-screen active-panel">
+          <div class="stats-grid">
+            <article class="metric-card metric-blue">
+              <div class="metric-label">Repositories</div>
+              <div class="metric-value" id="dash-total-repositories">0</div>
+              <div class="metric-foot">Scanned repositories in database</div>
+            </article>
+
+            <article class="metric-card metric-green">
+              <div class="metric-label">Package Records</div>
+              <div class="metric-value" id="dash-total-packages">0</div>
+              <div class="metric-foot">Unique package/version records</div>
+            </article>
+
+            <article class="metric-card metric-purple">
+              <div class="metric-label">Total Scans</div>
+              <div class="metric-value" id="dash-total-scans">0</div>
+              <div class="metric-foot">All historical scans</div>
+            </article>
+
+            <article class="metric-card metric-orange">
+              <div class="metric-label">Current Vulnerabilities</div>
+              <div class="metric-value" id="dash-total-vulns">0</div>
+              <div class="metric-foot">Latest scan of each repository</div>
+            </article>
+          </div>
+
+          <div class="db-summary-grid">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Latest scan per repository</p>
+                  <h3>Vulnerabilities by Severity</h3>
+                </div>
+                <button id="refresh-summary" type="button" class="btn btn-secondary">Refresh Summary</button>
+              </div>
+              <div id="summary-status" class="muted small-status"></div>
+              <div id="severity-summary" class="severity-summary" aria-label="Vulnerability severity summary"></div>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Highest current counts</p>
+                  <h3>Most Vulnerable Repositories</h3>
+                </div>
+              </div>
+              <div class="table-shell compact-table">
+                <table id="top-repositories-table">
+                  <thead><tr><th>Repository</th><th>Total</th><th>Critical</th><th>High</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="card full-span">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Across latest repository scans</p>
+                  <h3>Commonly Affected Packages</h3>
+                </div>
+              </div>
+              <div class="table-shell compact-table">
+                <table id="common-packages-table">
+                  <thead><tr><th>Package</th><th>Affected Repositories</th><th>Vulnerability Occurrences</th><th>Highest Severity</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Automated comparison</p>
+                  <h3>Monitoring Summary</h3>
+                </div>
+                <button id="refresh-monitor" type="button" class="btn btn-secondary">Refresh</button>
+              </div>
+
+              <div id="monitor-status" class="muted small-status"></div>
+
+              <div class="table-shell">
+                <table id="monitor-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Target</th>
+                      <th>New</th>
+                      <th>Resolved</th>
+                      <th>Total</th>
+                      <th>Critical</th>
+                      <th>High</th>
+                      <th>Medium</th>
+                      <th>Low</th>
+                      <th>Latest Scan</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <div class="side-stack">
+              <section class="card">
+                <div class="card-header">
+                  <div>
+                    <p class="section-kicker">Recent activity</p>
+                    <h3>Latest Scan Snapshot</h3>
+                  </div>
+                </div>
+
+                <div class="table-shell compact-table side-table">
+                  <table id="latest-scan-table">
+                    <thead>
+                      <tr>
+                        <th>Scan ID</th>
+                        <th>Target</th>
+                        <th>Time</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="card-header">
+                  <div>
+                    <p class="section-kicker">Target status</p>
+                    <h3>Target Health</h3>
+                  </div>
+                </div>
+
+                <div class="health-list">
+                  <div class="health-item">
+                    <span class="health-dot active-dot"></span>
+                    <span>Active Targets</span>
+                    <strong id="health-active-count">0</strong>
+                  </div>
+                  <div class="health-item">
+                    <span class="health-dot inactive-dot"></span>
+                    <span>Inactive Targets</span>
+                    <strong id="health-inactive-count">0</strong>
+                  </div>
+                  <div class="health-item">
+                    <span class="health-dot info-dot"></span>
+                    <span>Latest Monitor Rows</span>
+                    <strong id="health-monitor-count">0</strong>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- INITIAL POPULATION PANEL -->
+        <section id="population-panel" class="panel-screen hidden-panel">
+          <div class="population-grid">
+            <div class="population-main">
+              <section class="card">
+                <div class="card-header">
+                  <div>
+                    <p class="section-kicker">Baseline repositories</p>
+                    <h3>Initial Population</h3>
+                  </div>
+
+                  <div class="header-actions">
+                    <button id="scan-all-active" type="button" class="btn btn-primary btn-inline">
+                      Scan All Active Targets
+                    </button>
+                    <button id="refresh-dataset" type="button" class="btn btn-secondary">
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+
+                <div id="population-action-status" class="status-box compact-status-box">
+                  Imported targets can now be scanned directly from this table.
+                </div>
+
+                <div class="filters-row">
+                  <div class="filter-group">
+                    <label for="target-search" class="sr-only">Search targets</label>
+                    <input
+                      type="text"
+                      id="target-search"
+                      placeholder="Search target, type, source, notes..."
+                      aria-label="Search targets">
+                  </div>
+
+                  <div class="filter-group">
+                    <label for="target-filter" class="sr-only">Filter targets by status</label>
+                    <select id="target-filter" aria-label="Filter targets by status">
+                      <option value="all">All</option>
+                      <option value="active">Active only</option>
+                      <option value="inactive">Inactive only</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="table-shell">
+                  <table id="dataset-table">
+                    <thead>
+                      <tr>
+                        <th>Target</th>
+                        <th>Type</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Last Scan</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <div class="population-bottom-grid">
+                <section class="card">
+                  <div class="card-header">
+                    <div>
+                      <p class="section-kicker">Recent import activity</p>
+                      <h3>Import History</h3>
+                    </div>
+                  </div>
+
+                  <div id="import-history-empty" class="empty-state">
+                    No import has been run yet in this session.
+                  </div>
+
+                  <div class="table-shell compact-table hidden-panel" id="import-history-shell">
+                    <table id="import-history-table">
+                      <thead>
+                        <tr>
+                          <th>Time</th>
+                          <th>Mode</th>
+                          <th>Received</th>
+                          <th>Inserted</th>
+                          <th>Duplicates</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="card">
+                  <div class="card-header">
+                    <div>
+                      <p class="section-kicker">Population insights</p>
+                      <h3>Target Summary</h3>
+                    </div>
+                  </div>
+
+                  <div class="summary-stat-grid">
+                    <div class="mini-stat-card">
+                      <span class="mini-stat-label">Active</span>
+                      <strong id="summary-active-count">0</strong>
+                    </div>
+                    <div class="mini-stat-card">
+                      <span class="mini-stat-label">Inactive</span>
+                      <strong id="summary-inactive-count">0</strong>
+                    </div>
+                    <div class="mini-stat-card">
+                      <span class="mini-stat-label">Unique Sources</span>
+                      <strong id="summary-source-count">0</strong>
+                    </div>
+                    <div class="mini-stat-card">
+                      <span class="mini-stat-label">Unique Types</span>
+                      <strong id="summary-type-count">0</strong>
+                    </div>
+                  </div>
+
+                  <div class="summary-lists">
+                    <div class="summary-list-card">
+                      <h4>By Source</h4>
+                      <div id="summary-by-source" class="summary-badge-list"></div>
+                    </div>
+                    <div class="summary-list-card">
+                      <h4>By Type</h4>
+                      <div id="summary-by-type" class="summary-badge-list"></div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="card full-span">
+                  <div class="card-header">
+                    <div>
+                      <p class="section-kicker">Import support</p>
+                      <h3>Import Guide</h3>
+                    </div>
+                  </div>
+
+                  <div class="guide-grid">
+                    <div class="guide-card">
+                      <h4>CSV Format</h4>
+                      <p>Use these headers in your CSV file:</p>
+                      <code>target_id,target_type,source_name,notes,active</code>
+                    </div>
+
+                    <div class="guide-card">
+                      <h4>JSON Format</h4>
+                      <p>Use either an array of rows or an object with a <code>rows</code> array.</p>
+                    </div>
+
+                    <div class="guide-card">
+                      <h4>Accepted Active Values</h4>
+                      <p><code>1</code>, <code>0</code>, <code>true</code>, <code>false</code>, <code>yes</code>, <code>no</code></p>
+                    </div>
+
+                    <div class="guide-card">
+                      <h4>Duplicate Handling</h4>
+                      <p>Rows with an existing <code>target_id</code> are skipped during bulk import.</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div class="population-side-stack">
+              <section class="card action-card">
+                <div class="card-header">
+                  <div>
+                    <p class="section-kicker">Add repository</p>
+                    <h3>Add New Target</h3>
+                  </div>
+                </div>
+
+                <form id="add-target-form" class="scan-form">
+                  <label for="new-target-id">Target ID</label>
+                  <input type="text" id="new-target-id" placeholder="mysql or repo-name" required>
+
+                  <label for="new-target-type">Target Type</label>
+                  <input type="text" id="new-target-type" placeholder="linux_binary / github_repo / local_path" required>
+
+                  <label for="new-source-name">Source Name</label>
+                  <input type="text" id="new-source-name" placeholder="manual_entry or dataset_name" required>
+
+                  <label for="new-notes">Notes</label>
+                  <input type="text" id="new-notes" placeholder="Short note about this target">
+
+                  <label class="toggle-option single-toggle">
+                    <input type="checkbox" id="new-active" checked>
+                    <span>Set target as active</span>
+                  </label>
+
+                  <button type="submit" class="btn btn-primary">Add Target</button>
+                </form>
+
+                <div id="add-target-status" class="status-box">Add one repository manually.</div>
+              </section>
+
+              <section class="card action-card">
+                <div class="card-header">
+                  <div>
+                    <p class="section-kicker">Bulk import</p>
+                    <h3>Import Targets</h3>
+                  </div>
+                </div>
+
+                <form id="import-file-form" class="scan-form">
+                  <label for="import-file">Upload CSV or JSON</label>
+                  <input type="file" id="import-file" accept=".csv,.json">
+
+                  <button type="submit" class="btn btn-primary">Import File</button>
+                </form>
+
+                <form id="import-json-text-form" class="scan-form import-text-form">
+                  <label for="import-json-text">Or paste JSON</label>
+                  <textarea id="import-json-text" rows="8" placeholder='[{"target_id":"openssl","target_type":"linux_binary","source_name":"dr_charles_dataset","notes":"Imported","active":1}]'></textarea>
+
+                  <button type="submit" class="btn btn-secondary">Import Pasted JSON</button>
+                </form>
+
+                <div class="import-help">
+                  <strong>CSV headers:</strong>
+                  <code>target_id,target_type,source_name,notes,active</code>
+                </div>
+
+                <div id="import-status" class="status-box">Import targets from CSV, JSON file, or pasted JSON.</div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- RUN SCAN PANEL -->
+        <section id="scan-panel" class="panel-screen hidden-panel">
+          <div class="single-panel-wrap">
+            <section class="card action-card max-900">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Manual execution</p>
+                  <h3>Run New Scan</h3>
+                </div>
+              </div>
+
+              <form id="scan-form" class="scan-form">
+                <label for="target-input">Repository URL or local path</label>
+                <input
+                  id="target-input"
+                  name="target"
+                  type="text"
+                  placeholder="https://github.com/owner/repo or local path"
+                  value="{{ default_target }}"
+                  required>
+
+                <div class="toggle-row">
+                  <label class="toggle-option">
+                    <input type="checkbox" id="use-cache" checked>
+                    <span>Use cache</span>
+                  </label>
+
+                  <label class="toggle-option">
+                    <input type="checkbox" id="shallow-clone" checked>
+                    <span>Shallow clone</span>
+                  </label>
+                </div>
+
+                <button type="submit" id="scan-button" class="btn btn-primary">Run Scan</button>
+              </form>
+
+              <div id="status" aria-live="polite" class="status-box">Ready to run a scan.</div>
+            </section>
+
+            <section class="card action-card max-900 batch-scan-card">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Background execution</p>
+                  <h3>Batch Scan Repositories</h3>
+                  <p class="section-description">
+                    Enter up to 10 repository URLs, one URL per line. Repositories are scanned
+                    one at a time and each result is saved in MySQL.
+                  </p>
+                </div>
+              </div>
+
+              <form id="batch-scan-form" class="scan-form">
+                <label for="batch-target-input">Repository URLs</label>
+                <textarea
+                  id="batch-target-input"
+                  rows="8"
+                  placeholder="https://github.com/pallets/flask&#10;https://github.com/psf/requests&#10;https://github.com/OWASP/NodeGoat"
+                  required></textarea>
+
+                <div class="batch-count-row">
+                  <span id="batch-target-count">0 repositories</span>
+                  <span>Maximum: 10</span>
+                </div>
+
+                <div class="toggle-row">
+                  <label class="toggle-option">
+                    <input type="checkbox" id="batch-use-cache" checked>
+                    <span>Use cache</span>
+                  </label>
+                  <label class="toggle-option">
+                    <input type="checkbox" id="batch-shallow-clone" checked>
+                    <span>Shallow clone</span>
+                  </label>
+                </div>
+
+                <button type="submit" id="batch-scan-button" class="btn btn-primary">Start Batch Scan</button>
+              </form>
+
+              <div id="batch-status" aria-live="polite" class="status-box">
+                Ready to scan a repository batch.
+              </div>
+
+              <div id="batch-progress-shell" class="batch-progress-shell hidden-panel">
+                <div class="batch-progress-labels">
+                  <strong id="batch-progress-text">0 of 0 completed</strong>
+                  <span id="batch-current-target">Waiting to start</span>
+                </div>
+                <div class="batch-progress-track">
+                  <span id="batch-progress-bar" style="width:0%"></span>
+                </div>
+              </div>
+
+              <div id="batch-results-shell" class="table-shell batch-results-shell hidden-panel">
+                <table id="batch-results-table">
+                  <thead>
+                    <tr>
+                      <th>Repository</th>
+                      <th>Status</th>
+                      <th>Packages</th>
+                      <th>Vulnerabilities</th>
+                      <th>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- RESULTS PANEL -->
+        <section id="results-panel" class="panel-screen hidden-panel">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Latest manual result</p>
+                <h3>Scan Result</h3>
+              </div>
+            </div>
+
+            <div id="summary" class="summary-box">
+              No scan result yet. Run a scan to see package details and dependency tree.
+            </div>
+            <div id="reports-links" class="report-links"></div>
+
+            <div class="result-columns">
+              <div class="result-panel">
+                <h4>Package Vulnerability Details</h4>
+                <div class="table-shell">
+                  <table id="vulnerability-table">
+                    <thead>
+                      <tr>
+                        <th>Package</th>
+                        <th>Version</th>
+                        <th>Type</th>
+                        <th>Vulnerability</th>
+                        <th>Severity</th>
+                        <th>Fixed Version</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="result-panel">
+                <h4>Dependency Tree</h4>
+                <div id="dependency-tree" class="tree"></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- HISTORY PANEL -->
+        <section id="history-panel" class="panel-screen hidden-panel">
+          <div class="history-grid">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Recent scans</p>
+                  <h3>Scan History</h3>
+                </div>
+              </div>
+
+              <div class="table-shell">
+                <table id="history-scan-table">
+                  <thead>
+                    <tr>
+                      <th>Scan ID</th>
+                      <th>Target</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <p class="section-kicker">Monitoring history</p>
+                  <h3>Monitor Log History</h3>
+                </div>
+              </div>
+
+              <div class="table-shell">
+                <table id="history-monitor-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Target</th>
+                      <th>New</th>
+                      <th>Resolved</th>
+                      <th>Total</th>
+                      <th>Critical</th>
+                      <th>High</th>
+                      <th>Medium</th>
+                      <th>Low</th>
+                      <th>Latest Scan</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- AUTOMATIC SCAN SCHEDULER PANEL -->
+        <section id="scheduler-panel" class="panel-screen hidden-panel">
+          <section class="card scheduler-hero-card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Continuous vulnerability monitoring</p>
+                <h3>Repository Scan Settings</h3>
+                <p class="section-description">
+                  Set how often selected repositories are rescanned, save the vulnerabilities in MySQL,
+                  and send each new observation to the Vulnerability Timeline.
+                  The application and MySQL must remain running for scheduled scans.
+                </p>
+              </div>
+              <span id="scheduler-state-badge" class="trend-badge trend-baseline">Loading</span>
+            </div>
+
+            <form id="scheduler-config-form" class="scheduler-config-grid">
+              <div class="filter-group">
+                <label for="scheduler-interval">Scan frequency</label>
+                <select id="scheduler-interval">
+                  <option value="30">Every 30 minutes</option>
+                  <option value="60" selected>Every 1 hour</option>
+                  <option value="360">Every 6 hours</option>
+                  <option value="720">Every 12 hours</option>
+                  <option value="1440">Every 24 hours</option>
+                </select>
+              </div>
+              <label class="scheduler-enable-control">
+                <input id="scheduler-enabled" type="checkbox">
+                <span>Enable scheduled scanning</span>
+              </label>
+              <button type="submit" class="btn btn-primary">Save Schedule</button>
+              <button id="scheduler-run-now" type="button" class="btn btn-secondary">Run Selected Repositories Now</button>
+            </form>
+            <div id="scheduler-status-message" class="status-box compact-status-box">
+              Loading scheduler configuration...
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Prioritisation controls</p>
+                <h3>Risk-Score Settings</h3>
+                <p class="section-description">
+                  Set the maximum contribution of each evidence category. The five values must add up to 100.
+                  New risk-score calculations use the saved values; existing scan evidence is not changed.
+                </p>
+              </div>
+              <span id="risk-settings-total" class="trend-badge trend-baseline">Total: 100</span>
+            </div>
+            <form id="risk-settings-form" class="scheduler-config-grid">
+              <div class="filter-group">
+                <label for="risk-impact-weight">Technical impact</label>
+                <input id="risk-impact-weight" type="number" min="0" max="100" step="0.1" required>
+              </div>
+              <div class="filter-group">
+                <label for="risk-exploitation-weight">Exploitation evidence</label>
+                <input id="risk-exploitation-weight" type="number" min="0" max="100" step="0.1" required>
+              </div>
+              <div class="filter-group">
+                <label for="risk-exposure-weight">Repository exposure</label>
+                <input id="risk-exposure-weight" type="number" min="0" max="100" step="0.1" required>
+              </div>
+              <div class="filter-group">
+                <label for="risk-persistence-weight">Finding persistence</label>
+                <input id="risk-persistence-weight" type="number" min="0" max="100" step="0.1" required>
+              </div>
+              <div class="filter-group">
+                <label for="risk-remediation-weight">Remediation availability</label>
+                <input id="risk-remediation-weight" type="number" min="0" max="100" step="0.1" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Save Risk Settings</button>
+            </form>
+            <div id="risk-settings-message" class="status-box compact-status-box">Loading risk-score settings...</div>
+          </section>
+
+          <section class="card scheduler-repositories-card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Controlled scan list</p>
+                <h3>Scheduled Repositories</h3>
+                <p class="section-description">Add only the repositories that should be rescanned on the selected schedule.</p>
+              </div>
+            </div>
+            <form id="scheduler-target-form" class="scheduler-target-form">
+              <label for="scheduler-target-url" class="sr-only">Repository URL</label>
+              <input id="scheduler-target-url" type="text" placeholder="https://github.com/owner/repository" required>
+              <button type="submit" class="btn btn-primary">Add Repository</button>
+            </form>
+            <div id="scheduler-target-message" class="status-box compact-status-box">
+              This list is separate from the large initial-population dataset.
+            </div>
+            <div id="scheduler-target-list" class="scheduler-target-list">
+              <div class="empty-state">No repositories selected for scheduled scanning.</div>
+            </div>
+          </section>
+
+          <div class="scheduler-stats-grid">
+            <article class="metric-card metric-blue">
+              <div class="metric-label">Active Repositories</div>
+              <div id="scheduler-active-count" class="metric-value">0</div>
+              <div class="metric-foot">Selected for scheduled scanning</div>
+            </article>
+            <article class="metric-card metric-green">
+              <div class="metric-label">Last Run</div>
+              <div id="scheduler-last-run" class="scheduler-time-value">Not run</div>
+              <div class="metric-foot">Last automatic cycle</div>
+            </article>
+            <article class="metric-card metric-purple">
+              <div class="metric-label">Next Run</div>
+              <div id="scheduler-next-run" class="scheduler-time-value">Not scheduled</div>
+              <div class="metric-foot">Calculated from selected frequency</div>
+            </article>
+            <article class="metric-card metric-orange">
+              <div class="metric-label">Recent Success</div>
+              <div id="scheduler-success-count" class="metric-value">0</div>
+              <div class="metric-foot">Successful rows shown below</div>
+            </article>
+          </div>
+
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Next cycle</p>
+                <h3>Repository Run Timeline</h3>
+                <p class="section-description">Repositories run sequentially in the order shown. This avoids resource conflicts.</p>
+              </div>
+              <button id="refresh-scheduler" type="button" class="btn btn-secondary">Refresh</button>
+            </div>
+            <div id="scheduler-upcoming" class="schedule-timeline">
+              <div class="empty-state">No active repositories are scheduled.</div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Scheduled delivery record</p>
+                <h3>Scheduled Scan History</h3>
+                <p class="section-description">Each successful scheduled scan is stored as a normal scan and becomes available in the Vulnerability Timeline.</p>
+              </div>
+            </div>
+            <div class="table-shell">
+              <table id="scheduler-history-table">
+                <thead>
+                  <tr><th>Repository</th><th>Trigger</th><th>Started</th><th>Finished</th><th>Status</th><th>Scan</th><th>Packages</th><th>Vulnerabilities</th><th>Details</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <!-- VULNERABILITY TIMELINE PANEL -->
+        <section id="timeline-panel" class="panel-screen hidden-panel">
+          <section class="card timeline-controls-card">
+            <div class="card-header timeline-header">
+              <div>
+                <p class="section-kicker">Scan-to-scan security changes</p>
+                <h3>Vulnerability Timeline</h3>
+                <p class="section-description">
+                  Select a repository to compare consecutive scans and review new, resolved,
+                  persistent vulnerabilities and vulnerable-package version changes.
+                </p>
+              </div>
+              <button id="refresh-timeline" type="button" class="btn btn-secondary">Refresh Timeline</button>
+            </div>
+
+            <div class="timeline-selector-row">
+              <div class="filter-group timeline-target-group">
+                <label for="timeline-target-select">Repository</label>
+                <select id="timeline-target-select">
+                  <option value="">Loading repositories...</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="timeline-status" class="status-box compact-status-box">
+              Select a repository with at least one scan. A second scan enables comparison.
+            </div>
+          </section>
+
+          <div class="timeline-stats-grid">
+            <article class="metric-card metric-orange">
+              <div class="metric-label">Current Vulnerabilities</div>
+              <div class="metric-value" id="timeline-current-count">0</div>
+              <div class="metric-foot">Latest selected scan</div>
+            </article>
+            <article class="metric-card metric-red">
+              <div class="metric-label">New</div>
+              <div class="metric-value" id="timeline-new-count">0</div>
+              <div class="metric-foot">Added since previous scan</div>
+            </article>
+            <article class="metric-card metric-green">
+              <div class="metric-label">Resolved</div>
+              <div class="metric-value" id="timeline-resolved-count">0</div>
+              <div class="metric-foot">No longer detected</div>
+            </article>
+            <article class="metric-card metric-purple">
+              <div class="metric-label">Still Open</div>
+              <div class="metric-value" id="timeline-persistent-count">0</div>
+              <div class="metric-foot">Present in both scans</div>
+            </article>
+            <article class="metric-card metric-blue">
+              <div class="metric-label">Package Updates</div>
+              <div class="metric-value" id="timeline-update-count">0</div>
+              <div class="metric-foot">Version changes observed</div>
+            </article>
+          </div>
+
+          <section class="card lifecycle-analysis-card">
+            <div class="card-header timeline-detail-header">
+              <div>
+                <p class="section-kicker">Historical vulnerability analysis</p>
+                <h3>Vulnerability Lifecycle and Aging</h3>
+                <p class="section-description">
+                  Track when a vulnerability first appeared, how long it remained open,
+                  whether it was resolved, and whether it returned later.
+                </p>
+              </div>
+              <span id="lifecycle-history-note" class="lifecycle-history-note">Latest 30 scans</span>
+            </div>
+
+            <div class="lifecycle-stats-grid">
+              <article class="metric-card metric-orange">
+                <div class="metric-label">Open Findings</div>
+                <div class="metric-value" id="lifecycle-open-count">0</div>
+                <div class="metric-foot">Present in the latest scan</div>
+              </article>
+              <article class="metric-card metric-red">
+                <div class="metric-label">New</div>
+                <div class="metric-value" id="lifecycle-new-count">0</div>
+                <div class="metric-foot">First appeared in the latest scan</div>
+              </article>
+              <article class="metric-card metric-purple">
+                <div class="metric-label">Persistent</div>
+                <div class="metric-value" id="lifecycle-persistent-count">0</div>
+                <div class="metric-foot">Open across consecutive scans</div>
+              </article>
+              <article class="metric-card metric-red">
+                <div class="metric-label">Reintroduced</div>
+                <div class="metric-value" id="lifecycle-reintroduced-count">0</div>
+                <div class="metric-foot">Resolved earlier and detected again</div>
+              </article>
+              <article class="metric-card metric-green">
+                <div class="metric-label">Resolved</div>
+                <div class="metric-value" id="lifecycle-resolved-count">0</div>
+                <div class="metric-foot">No longer detected</div>
+              </article>
+              <article class="metric-card metric-blue">
+                <div class="metric-label">Fix Available</div>
+                <div class="metric-value" id="lifecycle-fix-count">0</div>
+                <div class="metric-foot">Open findings with a known fix</div>
+              </article>
+              <article class="metric-card metric-orange">
+                <div class="metric-label">Open Over 30 Days</div>
+                <div class="metric-value" id="lifecycle-old-count">0</div>
+                <div class="metric-foot">Long-running open findings</div>
+              </article>
+              <article class="metric-card metric-green">
+                <div class="metric-label">Average Resolution</div>
+                <div class="metric-value lifecycle-duration-value" id="lifecycle-resolution-average">—</div>
+                <div class="metric-foot">Average days until resolution</div>
+              </article>
+            </div>
+
+            <div class="lifecycle-priority-note">
+              Attention level uses severity first, followed by reintroduction and open age. Fix availability is shown to support remediation planning.
+            </div>
+
+            <div class="lifecycle-filters">
+              <div class="filter-group">
+                <label for="lifecycle-status-filter">Lifecycle status</label>
+                <select id="lifecycle-status-filter">
+                  <option value="all">All statuses</option>
+                  <option value="new">New</option>
+                  <option value="persistent">Persistent</option>
+                  <option value="reintroduced">Reintroduced</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="baseline">Baseline</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="lifecycle-severity-filter">Severity</label>
+                <select id="lifecycle-severity-filter">
+                  <option value="all">All severities</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                  <option value="negligible">Negligible</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="lifecycle-fix-filter">Fix availability</label>
+                <select id="lifecycle-fix-filter">
+                  <option value="all">All findings</option>
+                  <option value="available">Fix available</option>
+                  <option value="unavailable">No known fix</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-shell">
+              <table id="lifecycle-priority-table">
+                <thead>
+                  <tr>
+                    <th>Attention</th>
+                    <th>Package</th>
+                    <th>Vulnerability ID</th>
+                    <th>Severity</th>
+                    <th>Lifecycle Status</th>
+                    <th>First Seen</th>
+                    <th>Open Since or Resolved</th>
+                    <th>Age or Resolution</th>
+                    <th>Scans Present</th>
+                    <th>Fixed Version</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="10" class="empty-cell">Select a repository to calculate vulnerability lifecycle information.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Security direction</p>
+                <h3>Vulnerability Trend</h3>
+              </div>
+              <span id="timeline-trend-badge" class="trend-badge trend-baseline">Select a repository</span>
+            </div>
+            <div id="timeline-chart" class="timeline-chart">
+              <div class="empty-state">Timeline data will appear here.</div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Consecutive scan comparisons</p>
+                <h3>Scan Timeline</h3>
+              </div>
+            </div>
+            <div id="timeline-events" class="timeline-events">
+              <div class="empty-state">No repository selected.</div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-header timeline-detail-header">
+              <div>
+                <p class="section-kicker">Latest comparison details</p>
+                <h3>Vulnerability Changes</h3>
+              </div>
+              <div class="filter-group timeline-detail-filter">
+                <label for="timeline-detail-type" class="sr-only">Change type</label>
+                <select id="timeline-detail-type">
+                  <option value="new">New vulnerabilities</option>
+                  <option value="resolved">Resolved vulnerabilities</option>
+                  <option value="persistent">Still-open vulnerabilities</option>
+                  <option value="package_updates">Package updates</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-shell">
+              <table id="timeline-detail-table">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <!-- ALERTS AND NOTIFICATIONS PANEL -->
+        <section id="alerts-panel" class="panel-screen hidden-panel">
+          <section class="card alerts-hero-card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Actionable vulnerability monitoring</p>
+                <h3>Alerts and Notifications</h3>
+                <p class="section-description">
+                  Review new critical or high vulnerabilities, reintroduced findings,
+                  available fixes, long-open vulnerabilities and failed scheduled scans.
+                </p>
+              </div>
+              <button id="refresh-alerts" type="button" class="btn btn-primary">Refresh Alerts</button>
+            </div>
+            <div id="alerts-status" class="status-box compact-status-box">Loading vulnerability alerts...</div>
+          </section>
+
+          <div class="alerts-stats-grid alerts-review-stats-grid">
+            <article class="metric-card metric-orange"><div class="metric-label">Open Alerts</div><div class="metric-value" id="alerts-open-count">0</div><div class="metric-foot">Require review</div></article>
+            <article class="metric-card metric-red"><div class="metric-label">Critical</div><div class="metric-value" id="alerts-critical-count">0</div><div class="metric-foot">Immediate attention</div></article>
+            <article class="metric-card metric-orange"><div class="metric-label">High Priority</div><div class="metric-value" id="alerts-high-count">0</div><div class="metric-foot">Important open alerts</div></article>
+            <article class="metric-card metric-blue"><div class="metric-label">Reviewed</div><div class="metric-value" id="alerts-reviewed-count">0</div><div class="metric-foot">Checked by the user</div></article>
+            <article class="metric-card metric-orange"><div class="metric-label">Not Reviewed</div><div class="metric-value" id="alerts-not-reviewed-count">0</div><div class="metric-foot">Still needs review</div></article>
+            <article class="metric-card metric-green"><div class="metric-label">Resolved</div><div class="metric-value" id="alerts-resolved-count">0</div><div class="metric-foot">No longer detected</div></article>
+          </div>
+
+          <section class="card alert-action-queue-card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Risk-based response deadlines</p>
+                <h3>Vulnerability Action Queue</h3>
+                <p class="section-description">Alerts are organized by urgency so the most important work is visible first.</p>
+              </div>
+              <div class="alert-policy-note">Critical: 24h · High: 3 days · Medium: 7 days · Low: 30 days</div>
+            </div>
+            <div class="alert-queue-grid">
+              <button type="button" class="alert-queue-card queue-act-now" data-alert-queue="act_now"><span>Act Now</span><strong id="alerts-act-now-count">0</strong><small id="alerts-overdue-count">0 overdue</small></button>
+              <button type="button" class="alert-queue-card queue-review-soon" data-alert-queue="review_soon"><span>Review Soon</span><strong id="alerts-review-soon-count">0</strong><small>High priority or deadline near</small></button>
+              <button type="button" class="alert-queue-card queue-monitor" data-alert-queue="monitor"><span>Monitor</span><strong id="alerts-monitor-count">0</strong><small>Lower urgency findings</small></button>
+              <button type="button" class="alert-queue-card queue-completed" data-alert-queue="completed"><span>Completed</span><strong id="alerts-completed-count">0</strong><small>Resolved findings</small></button>
+            </div>
+          </section>
+
+          <section class="card risk-scoring-card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Evidence-based prioritization</p>
+                <h3>Vulnerability Risk Scoring</h3>
+                <p class="section-description">Each finding receives a transparent score from 0 to 100. The calculation combines impact, exploitation evidence, repository exposure, persistence and remediation availability.</p>
+              </div>
+              <div class="risk-summary-pills">
+                <span><strong id="alerts-risk-critical-count">0</strong> critical risk</span>
+                <span><strong id="alerts-risk-high-count">0</strong> high risk</span>
+              </div>
+            </div>
+            <div class="risk-method-grid">
+              <div><strong>40</strong><span>Impact / CVSS</span></div>
+              <div><strong>25</strong><span>Exploit evidence</span></div>
+              <div><strong>10</strong><span>Repository exposure</span></div>
+              <div><strong>10</strong><span>Persistence</span></div>
+              <div><strong>15</strong><span>Remediation</span></div>
+            </div>
+            <p class="risk-method-note">Dependency depth is not included because the current database does not store a reliable direct/indirect relationship. The score shows only verified evidence.</p>
+          </section>
+
+          <section class="card">
+            <div class="card-header">
+              <div><p class="section-kicker">Filter and review</p><h3>Security Alert Centre</h3></div>
+            </div>
+            <div class="alerts-filter-grid">
+              <div class="filter-group"><label for="alerts-repository-filter">Repository</label><select id="alerts-repository-filter"><option value="all">All repositories</option></select></div>
+              <div class="filter-group"><label for="alerts-type-filter">Alert type</label><select id="alerts-type-filter"><option value="all">All alert types</option><option value="new_vulnerability">New critical or high</option><option value="reintroduced_vulnerability">Reintroduced</option><option value="fix_available">Fix available</option><option value="long_open">Open over 30 days</option><option value="resolved_vulnerability">Resolved</option><option value="scan_failed">Scan failure</option></select></div>
+              <div class="filter-group"><label for="alerts-priority-filter">Priority</label><select id="alerts-priority-filter"><option value="all">All priorities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+              <div class="filter-group"><label for="alerts-state-filter">Status</label><select id="alerts-state-filter"><option value="all">All statuses</option><option value="open">Open</option><option value="resolved">Resolved</option></select></div>
+              <div class="filter-group"><label for="alerts-review-filter">Review status</label><select id="alerts-review-filter"><option value="all">All alerts</option><option value="not_reviewed">Not reviewed</option><option value="reviewed">Reviewed</option></select></div>
+              <div class="filter-group"><label for="alerts-queue-filter">Action queue</label><select id="alerts-queue-filter"><option value="all">All action groups</option><option value="act_now">Act Now</option><option value="review_soon">Review Soon</option><option value="monitor">Monitor</option><option value="completed">Completed</option></select></div>
+              <div class="filter-group alerts-search-group"><label for="alerts-search">Search</label><input id="alerts-search" type="search" placeholder="Package, CVE or repository"></div>
+            </div>
+            <div class="alerts-legend">
+              Alerts are generated from stored scan history. Select the checkbox after an alert has been reviewed; the review state and time are saved in MySQL.
+            </div>
+            <div class="table-shell alerts-table-shell">
+              <table id="alerts-table">
+                <thead><tr><th>Queue</th><th>Risk Score</th><th>Alert</th><th>Repository</th><th>Package / Vulnerability</th><th>Recommended Action</th><th>Deadline</th><th>Status</th><th>Review</th></tr></thead>
+                <tbody><tr><td colspan="9" class="empty-cell">Loading alerts...</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <!-- ANALYTICS PANEL -->
+        <section id="analytics-panel" class="panel-screen hidden-panel">
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Repository-level analytics</p>
+                <h3>Analytics Dashboard</h3>
+              </div>
+
+              <div class="header-actions">
+                <button id="refresh-analytics" type="button" class="btn btn-primary btn-inline">
+                  Refresh Analytics
+                </button>
+                <button id="reload-analytics-frame" type="button" class="btn btn-secondary">
+                  Reload View
+                </button>
+              </div>
+            </div>
+
+            <div id="analytics-status" class="status-box compact-status-box">
+              {% if analytics_ready %}
+              Analytics dashboard is ready. You can refresh it after new scans.
+              {% else %}
+              Analytics dashboard has not been generated yet. Click "Refresh Analytics" to build it.
+              {% endif %}
+            </div>
+
+            <div class="analytics-frame-shell">
+              <iframe
+                id="analytics-frame"
+                class="analytics-frame"
+                src="{{ url_for('static', filename='dashboard_plus/dashboard_plus.html') }}?v={{ cache_buster }}">
+              </iframe>
+            </div>
+          </section>
+        </section>
+
+        <footer class="footer-note">
+          Reports are stored in the <code>{{ reports_dir }}</code> folder.
+        </footer>
+      </main>
+    </div>
+
+    <div id="intelligence-overlay" class="intelligence-overlay hidden" aria-hidden="true">
+      <aside id="intelligence-panel" class="intelligence-panel" role="dialog" aria-modal="true" aria-labelledby="intelligence-title">
+        <div class="intelligence-header">
+          <div>
+            <p class="section-kicker">External security intelligence</p>
+            <h2 id="intelligence-title">Vulnerability Intelligence</h2>
+          </div>
+          <button id="close-intelligence" type="button" class="intelligence-close" aria-label="Close vulnerability details">×</button>
+        </div>
+        <div id="intelligence-status" class="status-box compact-status-box">Select a vulnerability to load details.</div>
+        <div id="intelligence-content" class="intelligence-content"></div>
+      </aside>
+    </div>
+
+    <script>
+      window.SBOM_UI = {
+        reportsDir: "{{ reports_dir }}"
+      };
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}?v={{ cache_buster }}"></script>
+  </body>
+</html>
